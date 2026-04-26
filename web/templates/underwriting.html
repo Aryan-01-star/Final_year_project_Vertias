@@ -252,17 +252,18 @@
   const pageSize = 8;
 
   function toggleFilterPanel() {
-    document.getElementById("uw-filter-panel").classList.toggle("hidden");
+    const panel = document.getElementById("uw-filter-panel");
+    if (panel) panel.classList.toggle("hidden");
   }
 
   function normalize(s) {
-    return String(s ?? "").toLowerCase();
+    return String(s || "").toLowerCase();
   }
 
   function applyFilters() {
     const q = normalize(document.getElementById("uw-search")?.value || "");
-    const priority = document.getElementById("uw-priority").value;
-    const minScore = Number(document.getElementById("uw-min-score").value || 0);
+    const priority = document.getElementById("uw-priority")?.value || "";
+    const minScore = Number(document.getElementById("uw-min-score")?.value || 0);
 
     filteredApps = allApps.filter(a => {
       if (currentStatusFilter !== "All" && a.status !== currentStatusFilter) return false;
@@ -280,10 +281,13 @@
   }
 
   function resetFilters() {
-    document.getElementById("uw-priority").value = "";
-    document.getElementById("uw-min-score").value = "";
-    const search = document.getElementById("uw-search");
-    if (search) search.value = "";
+    const priorityEl = document.getElementById("uw-priority");
+    if (priorityEl) priorityEl.value = "";
+    const scoreEl = document.getElementById("uw-min-score");
+    if (scoreEl) scoreEl.value = "";
+    const searchEl = document.getElementById("uw-search");
+    if (searchEl) searchEl.value = "";
+    
     filteredApps = [...allApps];
     page = 1;
     renderPage();
@@ -313,6 +317,8 @@
 
   function renderPage() {
     const container = document.getElementById("application-queue");
+    if (!container) return;
+    
     const start = (page - 1) * pageSize;
     const items = filteredApps.slice(start, start + pageSize);
     container.innerHTML = "";
@@ -321,53 +327,76 @@
       container.innerHTML = `<tr><td class="px-8 py-6 text-sm text-slate-500" colspan="6">No applications match the current filters.</td></tr>`;
     } else {
       items.forEach(app => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-custom-50/50 dark:hover:bg-slate-800/30 transition-colors";
-        const badgeClass = STATUS_BADGE[app.status] || STATUS_BADGE.Pending;
-        const priorityClass = PRIORITY_TEXT[app.priority] || PRIORITY_TEXT.Normal;
-        tr.innerHTML = `
-          <td class="px-8 py-6 font-bold text-slate-custom-900 dark:text-slate-custom-50 text-lg">#${app.application_id}</td>
-          <td class="px-8 py-6">
-            <p class="font-bold text-slate-custom-900 dark:text-slate-custom-50">${app.customer_name}</p>
-            <p class="text-[10px] text-slate-custom-400">Score: ${app.credit_score}</p>
-          </td>
-          <td class="px-8 py-6 font-bold text-slate-custom-900 dark:text-slate-custom-50 text-lg">₹${Number(app.loan_amount || 0).toLocaleString("en-IN")}</td>
-          <td class="px-8 py-6"><span class="${badgeClass}">${app.status}</span></td>
-          <td class="px-8 py-6 text-sm font-bold ${priorityClass}">${app.priority === 'Normal' ? 'Normal' : '! ' + app.priority}</td>
-          <td class="px-8 py-6 text-right">
-            <div class="flex items-center justify-end gap-2">
-              <button data-action="approve" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">Auto Approve</button>
-              <button data-action="review" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-primary text-white rounded-lg hover:opacity-90 transition-all">Manual Review</button>
-              <button data-action="reject" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Reject</button>
-            </div>
-          </td>
-        `;
-        
-        tr.querySelector('[data-action="approve"]').onclick = () => updateStatus(app.application_id, 'Accepted');
-        tr.querySelector('[data-action="reject"]').onclick = () => updateStatus(app.application_id, 'Rejected');
-        tr.querySelector('[data-action="review"]').onclick = () => {
-          const url = new URL(window.location.origin + "/credit_risk");
-          url.searchParams.set("customer_name", app.customer_name || "");
-          url.searchParams.set("income", String(app.income ?? ""));
-          url.searchParams.set("debt", String(app.debt ?? ""));
-          url.searchParams.set("credit_score", String(app.credit_score ?? ""));
-          url.searchParams.set("loan_amount", String(app.loan_amount ?? ""));
-          url.searchParams.set("duration", String(app.duration ?? ""));
-          url.searchParams.set("age", String(app.age ?? ""));
-          url.searchParams.set("emp_length", String(app.emp_length ?? ""));
-          window.location.href = url.toString();
-        });
-        container.appendChild(tr);
+        try {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-custom-50/50 dark:hover:bg-slate-800/30 transition-colors";
+          
+          const status = app.status || "Waiting";
+          const badgeClass = STATUS_BADGE[status] || "rounded-full bg-slate-100 text-slate-600 font-bold text-xs px-4 py-1.5";
+          const priorityClass = PRIORITY_TEXT[app.priority] || PRIORITY_TEXT.Normal;
+          
+          tr.innerHTML = `
+            <td class="px-8 py-6 font-bold text-slate-custom-900 dark:text-slate-custom-50 text-lg">#${app.application_id || 'N/A'}</td>
+            <td class="px-8 py-6">
+              <p class="font-bold text-slate-custom-900 dark:text-slate-custom-50">${app.customer_name || 'Unknown'}</p>
+              <p class="text-[10px] text-slate-custom-400">Score: ${app.credit_score || 0}</p>
+            </td>
+            <td class="px-8 py-6 font-bold text-slate-custom-900 dark:text-slate-custom-50 text-lg">₹${Number(app.loan_amount || 0).toLocaleString("en-IN")}</td>
+            <td class="px-8 py-6"><span class="${badgeClass}">${status}</span></td>
+            <td class="px-8 py-6 text-sm font-bold ${priorityClass}">${app.priority === 'Normal' ? 'Normal' : '! ' + (app.priority || 'Normal')}</td>
+            <td class="px-8 py-6 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button data-action="approve" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">Auto Approve</button>
+                <button data-action="review" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-primary text-white rounded-lg hover:opacity-90 transition-all">Manual Review</button>
+                <button data-action="reject" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Reject</button>
+              </div>
+            </td>
+          `;
+          
+          const approveBtn = tr.querySelector('[data-action="approve"]');
+          if (approveBtn) approveBtn.onclick = () => updateStatus(app.application_id, 'Accepted');
+          
+          const rejectBtn = tr.querySelector('[data-action="reject"]');
+          if (rejectBtn) rejectBtn.onclick = () => updateStatus(app.application_id, 'Rejected');
+          
+          const reviewBtn = tr.querySelector('[data-action="review"]');
+          if (reviewBtn) {
+            reviewBtn.onclick = () => {
+              const url = new URL(window.location.origin + "/credit_risk");
+              url.searchParams.set("customer_name", app.customer_name || "");
+              url.searchParams.set("income", String(app.income || ""));
+              url.searchParams.set("debt", String(app.debt || ""));
+              url.searchParams.set("credit_score", String(app.credit_score || ""));
+              url.searchParams.set("loan_amount", String(app.loan_amount || ""));
+              url.searchParams.set("duration", String(app.duration || ""));
+              url.searchParams.set("age", String(app.age || ""));
+              url.searchParams.set("emp_length", String(app.emp_length || ""));
+              window.location.href = url.toString();
+            };
+          }
+          container.appendChild(tr);
+        } catch (e) {
+          console.error("Error rendering row:", e);
+        }
       });
     }
 
     const maxPage = Math.max(1, Math.ceil(filteredApps.length / pageSize));
-    document.getElementById("uw-page").innerText = String(page);
-    document.getElementById("uw-pagination-text").innerText = `Showing ${items.length ? (start + 1) : 0}-${items.length ? (start + items.length) : 0} of ${filteredApps.length} applications`;
-    document.getElementById("uw-prev").disabled = page <= 1;
-    document.getElementById("uw-next").disabled = page >= maxPage;
-    document.getElementById("uw-prev").classList.toggle("opacity-50", page <= 1);
-    document.getElementById("uw-next").classList.toggle("opacity-50", page >= maxPage);
+    const pageEl = document.getElementById("uw-page");
+    if (pageEl) pageEl.innerText = String(page);
+    const textEl = document.getElementById("uw-pagination-text");
+    if (textEl) textEl.innerText = `Showing ${items.length ? (start + 1) : 0}-${items.length ? (start + items.length) : 0} of ${filteredApps.length} applications`;
+    
+    const prevBtn = document.getElementById("uw-prev");
+    if (prevBtn) {
+      prevBtn.disabled = page <= 1;
+      prevBtn.classList.toggle("opacity-50", page <= 1);
+    }
+    const nextBtn = document.getElementById("uw-next");
+    if (nextBtn) {
+      nextBtn.disabled = page >= maxPage;
+      nextBtn.classList.toggle("opacity-50", page >= maxPage);
+    }
   }
 
   async function updateStatus(appId, status) {
@@ -392,12 +421,14 @@
   async function fetchApplications() {
     try {
       const response = await fetch("/api/applications");
+      if (!response.ok) throw new Error("API error");
       allApps = await response.json();
       filteredApps = [...allApps];
       applyFilters();
     } catch (err) {
       console.error("Failed to fetch applications:", err);
-      document.getElementById("application-queue").innerHTML = `<tr><td class="px-8 py-6 text-sm text-red-500" colspan="6">Failed to load applications.</td></tr>`;
+      const queue = document.getElementById("application-queue");
+      if (queue) queue.innerHTML = `<tr><td class="px-8 py-6 text-sm text-red-500" colspan="6">Failed to load applications.</td></tr>`;
     }
   }
 
@@ -408,9 +439,9 @@
       applyFilters();
     });
   });
+  
   setActiveFilterButton(currentStatusFilter);
   document.getElementById("uw-search")?.addEventListener("input", () => applyFilters());
-
   fetchApplications();
 </script>
 {% endblock %}

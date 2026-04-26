@@ -113,6 +113,12 @@ def init_db():
         ''', samples)
     
     conn.commit()
+    
+    # Normalize existing statuses for the new workflow
+    cursor.execute("UPDATE applications SET status = 'Accepted' WHERE status = 'Approved'")
+    cursor.execute("UPDATE applications SET status = 'Waiting' WHERE status IN ('Pending', 'Under Review', 'In Progress')")
+    conn.commit()
+    
     conn.close()
     print("Database ready.")
 
@@ -173,13 +179,13 @@ def get_analytics():
     cursor.execute('SELECT COUNT(*) FROM applications')
     total = cursor.fetchone()[0]
     
-    cursor.execute('SELECT COUNT(*) FROM applications WHERE status = "Approved"')
+    cursor.execute('SELECT COUNT(*) FROM applications WHERE status = "Accepted"')
     approved = cursor.fetchone()[0]
     
     cursor.execute('SELECT SUM(loan_amount) FROM applications')
     total_volume = cursor.fetchone()[0] or 0
     
-    cursor.execute('SELECT COUNT(*) FROM applications WHERE status IN ("Under Review", "Pending")')
+    cursor.execute('SELECT COUNT(*) FROM applications WHERE status = "Waiting"')
     pending = cursor.fetchone()[0]
     
     # 1. Risk Label Distribution
