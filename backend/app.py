@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import joblib
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_from_directory, abort
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from database import (
@@ -38,6 +38,9 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 DEMO_CREDENTIALS = {
     'admin': {'password': 'admin123', 'role': 'company'},
     'client': {'password': 'client123', 'role': 'client'},
+    'priya': {'password': 'priya123', 'role': 'client'},
+    'vikram': {'password': 'vikram123', 'role': 'client'},
+    'rajesh': {'password': 'rajesh123', 'role': 'client'},
 }
 
 def login_required(f):
@@ -179,7 +182,13 @@ def client_dashboard():
     # Fetch all applications for the main view
     all_apps = get_all_applications()
     # Filter for this specific client (Demo logic: in real world, filter would be in SQL)
-    client_apps = [a for a in all_apps if a['customer_name'] == username or a['customer_name'] == 'Rajesh Kumar'] # Rajesh is dummy for client role
+    # Each demo client has an application whose customer_name matches their username.
+    # The legacy 'client' user falls back to the original Rajesh Kumar demo record.
+    client_apps = [
+        a for a in all_apps
+        if a['customer_name'] == username
+        or (username == 'client' and a['customer_name'] == 'Rajesh Kumar')
+    ]
     
     # Extract credit score for display (use the first one found or a default)
     credit_score = 750 # Default
@@ -207,6 +216,29 @@ def client_documents():
     username = session.get('username', 'client')
     app_data = get_or_create_client_application(username)
     return render_template('client_documents.html', client_app=app_data)
+
+@app.route('/client_my_documents')
+@client_required
+def client_my_documents():
+    username = session.get('username', 'client')
+    app_data = get_or_create_client_application(username)
+    return render_template('client_my_documents.html', client_app=app_data)
+
+@app.route('/client_my_documents/file/<document_key>')
+@client_required
+def client_my_documents_file(document_key):
+    username = session.get('username', 'client')
+    app_data = get_or_create_client_application(username)
+    doc = (app_data.get('documents') or {}).get(document_key)
+    if not doc or doc.get('status') != 'uploaded':
+        abort(404)
+    filename = doc.get('filename')
+    if not filename:
+        abort(404)
+    storage_name = f"{username}_{document_key}_{filename}"
+    if not os.path.exists(os.path.join(UPLOAD_DIR, storage_name)):
+        abort(404)
+    return send_from_directory(UPLOAD_DIR, storage_name, as_attachment=False)
 
 @app.route('/client_iris')
 @onboarding_enforcer

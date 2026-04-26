@@ -1,0 +1,113 @@
+{% extends "client_base.html" %}
+{% set active_client_nav = "documents" %}
+{% block title %}My Documents - Veritas{% endblock %}
+{% block header_title %}My Documents{% endblock %}
+
+{% block content %}
+{% set documents = client_app.documents or {} %}
+{% set uploaded_count = documents.values() | selectattr('status', 'equalto', 'uploaded') | list | length %}
+{% set total_count = documents | length %}
+
+<div class="space-y-8 animate-fade-in">
+
+  <!-- Header -->
+  <section class="relative overflow-hidden rounded-[2.5rem] bg-slate-900 text-white p-8 md:p-12 shadow-2xl">
+    <div class="absolute -right-16 -top-16 w-64 h-64 bg-primary/30 rounded-full blur-3xl opacity-40"></div>
+    <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-4 border border-white/10">
+          <span class="material-symbols-outlined text-[14px]">folder_open</span>
+          Document Vault
+        </div>
+        <h1 class="text-4xl font-black tracking-tight mb-2">My Documents</h1>
+        <p class="text-slate-400 text-lg max-w-xl">
+          All documents linked to Application
+          <span class="font-mono text-white bg-white/10 px-2 py-0.5 rounded">#{{ client_app.application_id }}</span>
+        </p>
+      </div>
+      <div class="flex-shrink-0 bg-white/10 border border-white/10 rounded-2xl px-6 py-4 text-center">
+        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400">Uploaded</div>
+        <div class="text-3xl font-black tracking-tight mt-1">{{ uploaded_count }}<span class="text-slate-500 text-xl"> / {{ total_count }}</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documents Grid -->
+  <section class="bg-white dark:bg-slate-900 border border-slate-custom-200 dark:border-slate-custom-800 rounded-[2.5rem] p-6 md:p-10 shadow-sm">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-xl font-bold text-slate-custom-900 dark:text-white flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary">description</span>
+        Document Library
+      </h2>
+      <a href="/client_documents" class="text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-4 py-2 rounded-xl transition-colors">
+        Manage Uploads
+      </a>
+    </div>
+
+    {% if documents %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {% for key, doc in documents.items() %}
+      {% set is_uploaded = doc.status == 'uploaded' %}
+      <div class="group relative rounded-[2rem] border {% if is_uploaded %}border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-900/10{% else %}border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40{% endif %} p-6 transition-all hover:shadow-md">
+        <div class="flex items-start justify-between gap-4 mb-5">
+          <div class="flex items-start gap-4 min-w-0">
+            <div class="flex-shrink-0 size-12 rounded-2xl flex items-center justify-center {% if is_uploaded %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400{% else %}bg-slate-200 dark:bg-slate-700 text-slate-500{% endif %}">
+              <span class="material-symbols-outlined">{% if is_uploaded %}task{% else %}draft{% endif %}</span>
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-bold text-slate-custom-900 dark:text-white truncate">{{ doc.label }}</h3>
+              <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
+                {% if doc.required %}Required{% else %}Optional{% endif %}
+              </p>
+            </div>
+          </div>
+          <span class="flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest {% if is_uploaded %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300{% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+            {% if is_uploaded %}Uploaded{% else %}Pending{% endif %}
+          </span>
+        </div>
+
+        {% if is_uploaded %}
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex items-center gap-3 mb-4">
+          <span class="material-symbols-outlined text-slate-400">attach_file</span>
+          <p class="text-sm font-medium text-slate-custom-900 dark:text-slate-200 truncate flex-1">{{ doc.filename }}</p>
+        </div>
+        <div class="flex gap-3">
+          <a href="/client_my_documents/file/{{ key }}" target="_blank" rel="noopener"
+             class="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+            <span class="material-symbols-outlined text-base">visibility</span>
+            View
+          </a>
+          <a href="/client_my_documents/file/{{ key }}" download
+             class="inline-flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-custom-900 dark:text-white font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <span class="material-symbols-outlined text-base">download</span>
+          </a>
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">This document hasn't been uploaded yet.</p>
+        <a href="/client_documents"
+           class="inline-flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm hover:opacity-90 transition-opacity">
+          <span class="material-symbols-outlined text-base">upload</span>
+          Upload Now
+        </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-20 opacity-60">
+      <span class="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4">folder_off</span>
+      <p class="text-base font-medium text-slate-500">No documents on file yet.</p>
+      <a href="/client_documents" class="inline-flex items-center gap-2 mt-6 py-3 px-6 rounded-2xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+        <span class="material-symbols-outlined text-base">upload</span>
+        Start Uploading
+      </a>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+</style>
+{% endblock %}
