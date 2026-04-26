@@ -1,0 +1,93 @@
+{% extends "client_base.html" %}
+{% set active_client_nav = "apply" %}
+{% block title %}Apply for Loan - Veritas{% endblock %}
+{% block header_title %}New Loan Application{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8 animate-fade-in">
+    <div class="bg-white dark:bg-slate-900 border border-slate-custom-200 dark:border-slate-custom-800 rounded-[2.5rem] p-10 shadow-sm relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 size-48 bg-primary/5 rounded-full blur-3xl"></div>
+        <div class="relative z-10">
+            <h1 class="text-3xl font-black text-slate-custom-900 dark:text-white">Request Funding</h1>
+            <p class="text-slate-500 text-sm mt-3 max-w-md leading-relaxed">Fill in the details below to start your application. Our system will provide an instant preliminary decision based on your profile.</p>
+        </div>
+    </div>
+
+    <form method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-white dark:bg-slate-900 border border-slate-custom-200 dark:border-slate-custom-800 rounded-[2.5rem] p-10 shadow-sm space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Loan Amount (INR)</label>
+                        <div class="relative">
+                            <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                            <input type="number" name="loan_amount" required min="10000" step="5000" value="500000" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl py-4 pl-10 pr-6 text-lg font-bold focus:ring-2 focus:ring-primary outline-none transition-all" />
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Repayment Term</label>
+                        <select name="duration" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl py-4 px-6 text-lg font-bold focus:ring-2 focus:ring-primary outline-none appearance-none transition-all">
+                            <option value="12">12 Months</option>
+                            <option value="24">24 Months</option>
+                            <option value="36" selected>36 Months</option>
+                            <option value="48">48 Months</option>
+                            <option value="60">60 Months</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Loan Purpose</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {% for intent in ['PERSONAL', 'EDUCATION', 'MEDICAL', 'VENTURE', 'HOME_RENOVATION', 'DEBT_CONSOLIDATION'] %}
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="loan_intent" value="{{ intent }}" {% if loop.first %}checked{% endif %} class="hidden peer" />
+                            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all text-center group-hover:bg-slate-100 dark:group-hover:bg-slate-700">
+                                <p class="text-[8px] font-black uppercase tracking-tight text-slate-400 peer-checked:text-primary">{{ intent.replace('_', ' ') }}</p>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full py-5 rounded-2xl bg-primary text-white font-black uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                        Submit Application
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-8">
+            <div class="bg-primary rounded-[2.5rem] p-8 text-white shadow-2xl shadow-primary/30 relative overflow-hidden">
+                <div class="relative z-10">
+                    <h3 class="text-xl font-bold mb-4">Estimated Rate</h3>
+                    <div class="text-5xl font-black mb-2">12.5%</div>
+                    <p class="text-white/70 text-xs leading-relaxed">Final rate depends on your verified credit score and document review.</p>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 border border-slate-custom-200 dark:border-slate-custom-800 rounded-[2.5rem] p-8 shadow-sm">
+                <h3 class="font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">info</span>
+                    Quick Tip
+                </h3>
+                <ul class="space-y-4">
+                    <li class="flex gap-3">
+                        <span class="size-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 shrink-0">
+                            <span class="material-symbols-outlined text-sm">check</span>
+                        </span>
+                        <p class="text-xs text-slate-500">Ensure your documents are up to date for faster processing.</p>
+                    </li>
+                    <li class="flex gap-3">
+                        <span class="size-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 shrink-0">
+                            <span class="material-symbols-outlined text-sm">check</span>
+                        </span>
+                        <p class="text-xs text-slate-500">Longer durations may result in higher interest rates.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

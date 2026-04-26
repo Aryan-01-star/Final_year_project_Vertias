@@ -102,10 +102,10 @@ def init_db():
     if cursor.fetchone()[0] == 0:
         print("Seeding database with sample applications...")
         samples = [
-            ('VNB-90488', 'Rajesh Kumar', 1200000, 450000, 785, 850000, 36, 785, 'Low Risk', 'Under Review', 'High', 34, 12.0, 'MORTGAGE', 'PERSONAL', 'A', 11.5),
-            ('VNB-90512', 'Ananya Sharma', 1500000, 200000, 812, 1500000, 48, 812, 'Minimal Risk', 'Approved', 'Normal', 29, 8.0, 'RENT', 'EDUCATION', 'A', 10.2),
+            ('VNB-90488', 'Rajesh Kumar', 1200000, 450000, 785, 850000, 36, 785, 'Low Risk', 'Waiting', 'High', 34, 12.0, 'MORTGAGE', 'PERSONAL', 'A', 11.5),
+            ('VNB-90512', 'Ananya Sharma', 1500000, 200000, 812, 1500000, 48, 812, 'Minimal Risk', 'Accepted', 'Normal', 29, 8.0, 'RENT', 'EDUCATION', 'A', 10.2),
             ('VNB-90399', 'Vikram Singh', 600000, 550000, 645, 420000, 24, 645, 'High Risk', 'Rejected', 'Critical', 45, 1.5, 'RENT', 'MEDICAL', 'D', 14.8),
-            ('VNB-90555', 'Priya Verma', 850000, 100000, 790, 150000, 12, 790, 'Low Risk', 'Approved', 'Normal', 24, 4.0, 'RENT', 'PERSONAL', 'B', 11.0)
+            ('VNB-90555', 'Priya Verma', 850000, 100000, 790, 150000, 12, 790, 'Low Risk', 'Accepted', 'Normal', 24, 4.0, 'RENT', 'PERSONAL', 'B', 11.0)
         ]
         cursor.executemany('''
         INSERT INTO applications (application_id, customer_name, income, debt, credit_score, loan_amount, duration, risk_score, risk_label, status, priority, age, emp_length, home_ownership, loan_intent, loan_grade, int_rate)
@@ -135,7 +135,7 @@ def save_application(data):
         data.get('duration'),
         data.get('risk_score'),
         data.get('risk_label'),
-        data.get('status', 'Pending'),
+        data.get('status', 'Waiting'),
         data.get('priority', 'Normal'),
         data.get('age'),
         data.get('emp_length'),
@@ -148,6 +148,17 @@ def save_application(data):
     conn.commit()
     conn.close()
     return app_id
+
+def update_application_status(app_id, status):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        'UPDATE applications SET status = ? WHERE application_id = ?',
+        (status, app_id)
+    )
+    conn.commit()
+    conn.close()
+    return True
 
 def get_all_applications():
     conn = get_db_connection()

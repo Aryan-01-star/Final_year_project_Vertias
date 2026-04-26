@@ -169,9 +169,9 @@
                             <div class="flex items-center gap-2">
                                 <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                                     <button data-filter="All" class="uw-filter px-4 py-1.5 text-xs font-bold bg-primary text-white rounded-lg">All</button>
-                                    <button data-filter="Pending" class="uw-filter px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg">Pending</button>
-                                    <button data-filter="Under Review" class="uw-filter px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg">Under Review</button>
-                                    <button data-filter="Escalated" class="uw-filter px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg">Escalated</button>
+                                    <button data-filter="Waiting" class="uw-filter px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg">Waiting</button>
+                                    <button data-filter="Accepted" class="uw-filter px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg">Accepted</button>
+                                    <button data-filter="Rejected" class="uw-filter px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg">Rejected</button>
                                 </div>
                                 <input id="uw-search" class="hidden md:block ml-2 w-56 bg-slate-custom-50 dark:bg-slate-custom-800 border border-slate-custom-200 dark:border-slate-custom-700 rounded-xl py-2 px-3 text-xs focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Search name / id…" />
                                 <button
@@ -235,10 +235,9 @@
 {% block scripts %}
 <script>
   const STATUS_BADGE = {
-    Approved: "rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold text-xs px-4 py-1.5",
-    Escalated: "rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 font-bold text-xs px-4 py-1.5",
-    "Under Review": "rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 font-bold text-xs px-4 py-1.5",
-    Pending: "rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 font-bold text-xs px-4 py-1.5",
+    Accepted: "rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold text-xs px-4 py-1.5",
+    Rejected: "rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 font-bold text-xs px-4 py-1.5",
+    Waiting: "rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 font-bold text-xs px-4 py-1.5",
   };
   const PRIORITY_TEXT = {
     Critical: "text-red-600",
@@ -336,12 +335,17 @@
           <td class="px-8 py-6"><span class="${badgeClass}">${app.status}</span></td>
           <td class="px-8 py-6 text-sm font-bold ${priorityClass}">${app.priority === 'Normal' ? 'Normal' : '! ' + app.priority}</td>
           <td class="px-8 py-6 text-right">
-            <div class="flex items-center justify-end gap-3">
-              <button type="button" class="px-4 py-1.5 text-xs font-bold bg-primary text-white rounded-lg hover:opacity-90 transition-opacity">Review</button>
+            <div class="flex items-center justify-end gap-2">
+              <button data-action="approve" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">Auto Approve</button>
+              <button data-action="review" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-primary text-white rounded-lg hover:opacity-90 transition-all">Manual Review</button>
+              <button data-action="reject" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Reject</button>
             </div>
           </td>
         `;
-        tr.querySelector("button").addEventListener("click", () => {
+        
+        tr.querySelector('[data-action="approve"]').onclick = () => updateStatus(app.application_id, 'Accepted');
+        tr.querySelector('[data-action="reject"]').onclick = () => updateStatus(app.application_id, 'Rejected');
+        tr.querySelector('[data-action="review"]').onclick = () => {
           const url = new URL(window.location.origin + "/credit_risk");
           url.searchParams.set("customer_name", app.customer_name || "");
           url.searchParams.set("income", String(app.income ?? ""));
@@ -364,6 +368,25 @@
     document.getElementById("uw-next").disabled = page >= maxPage;
     document.getElementById("uw-prev").classList.toggle("opacity-50", page <= 1);
     document.getElementById("uw-next").classList.toggle("opacity-50", page >= maxPage);
+  }
+
+  async function updateStatus(appId, status) {
+    if (!confirm(`Are you sure you want to mark this application as ${status}?`)) return;
+    try {
+      const res = await fetch(`/api/applications/${appId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        fetchApplications();
+      } else {
+        alert("Failed to update status.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error updating status.");
+    }
   }
 
   async function fetchApplications() {

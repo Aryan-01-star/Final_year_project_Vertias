@@ -180,7 +180,15 @@ def client_dashboard():
     all_apps = get_all_applications()
     # Filter for this specific client (Demo logic: in real world, filter would be in SQL)
     client_apps = [a for a in all_apps if a['customer_name'] == username or a['customer_name'] == 'Rajesh Kumar'] # Rajesh is dummy for client role
-    return render_template('client_dashboard.html', applications=client_apps, client_app=app_data)
+    
+    # Extract credit score for display (use the first one found or a default)
+    credit_score = 750 # Default
+    if client_apps:
+        credit_score = client_apps[0].get('credit_score', 750)
+    elif username == 'client':
+        credit_score = 785 # Demo value for default client
+        
+    return render_template('client_dashboard.html', applications=client_apps, client_app=app_data, credit_score=credit_score)
 
 @app.route('/client_onboarding')
 @client_required
@@ -204,6 +212,53 @@ def client_documents():
 @onboarding_enforcer
 def client_iris():
     return render_template('client_iris.html')
+
+@app.route('/client_apply', methods=['GET', 'POST'])
+@client_required
+def client_apply():
+    username = session.get('username', 'client')
+    if request.method == 'POST':
+        try:
+            data = request.form
+            loan_amount = float(data.get('loan_amount', 0))
+            duration = int(data.get('duration', 36))
+            loan_intent = data.get('loan_intent', 'PERSONAL')
+            
+            # Simple dummy logic for score and grade
+            credit_score = 750 
+            # Check if user already has an app to steal their score
+            all_apps = get_all_applications()
+            user_apps = [a for a in all_apps if a['customer_name'] == username]
+            if user_apps:
+                credit_score = user_apps[0]['credit_score']
+
+            risk_score = credit_score # Simplification
+            grade = score_to_grade(credit_score)
+            
+            save_application({
+                'customer_name': username,
+                'income': 1000000, # Dummy
+                'debt': 200000,    # Dummy
+                'credit_score': credit_score,
+                'loan_amount': loan_amount,
+                'duration': duration,
+                'risk_score': risk_score,
+                'risk_label': 'Low Risk' if risk_score > 700 else 'Medium Risk',
+                'status': 'Waiting',
+                'priority': 'Normal',
+                'age': 30,
+                'emp_length': 5.0,
+                'home_ownership': 'RENT',
+                'loan_intent': loan_intent,
+                'loan_grade': grade,
+                'int_rate': 12.5
+            })
+            return redirect(url_for('client_dashboard'))
+        except Exception as e:
+            print(f"Error applying for loan: {e}")
+            return render_template('client_apply.html', error="Failed to submit application.")
+
+    return render_template('client_apply.html')
 
 @app.route('/client_underwriting')
 @client_required
@@ -248,6 +303,17 @@ def reports():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/api/applications/<app_id>/status', methods=['POST'])
+@company_required
+def api_update_application_status(app_id):
+    from database import update_application_status
+    data = request.get_json(silent=True) or {}
+    status = data.get('status')
+    if status not in ['Waiting', 'Accepted', 'Rejected']:
+        return jsonify({'error': 'Invalid status'}), 400
+    update_application_status(app_id, status)
+    return jsonify({'ok': True})
 
 @app.route('/api/applications')
 @login_required
@@ -452,7 +518,7 @@ def predict():
             'duration': duration,
             'risk_score': score,
             'risk_label': label,
-            'status': 'Approved' if score > 750 else ('Rejected' if score < 400 else 'Under Review'),
+            'status': 'Accepted' if score > 750 else ('Rejected' if score < 400 else 'Waiting'),
             'priority': 'Normal' if score > 600 else 'High',
             'age': age,
             'emp_length': emp_length,

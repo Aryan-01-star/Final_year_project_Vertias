@@ -57,10 +57,12 @@
         <span class="material-symbols-outlined text-xl">dashboard</span>
         Dashboard
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 rounded-2xl {% if active_client_nav=='underwriting' %}bg-primary/5 text-primary font-bold{% else %}text-slate-custom-500 dark:text-slate-custom-400 hover:bg-slate-custom-50 dark:hover:bg-slate-custom-800 transition-colors{% endif %}" href="/client_underwriting">
-        <span class="material-symbols-outlined text-xl">rocket_launch</span>
-        AI Underwriting
+      <a class="flex items-center gap-3 px-4 py-3 rounded-2xl {% if active_client_nav=='apply' %}bg-primary/5 text-primary font-bold{% else %}text-slate-custom-500 dark:text-slate-custom-400 hover:bg-slate-custom-50 dark:hover:bg-slate-custom-800 transition-colors{% endif %}" href="/client_apply">
+        <span class="material-symbols-outlined text-xl">add_card</span>
+        Apply for Loan
       </a>
+
+
       <a class="flex items-center gap-3 px-4 py-3 rounded-2xl {% if active_client_nav=='documents' %}bg-primary/5 text-primary font-bold{% else %}text-slate-custom-500 dark:text-slate-custom-400 hover:bg-slate-custom-50 dark:hover:bg-slate-custom-800 transition-colors{% endif %}" href="/client_documents">
         <span class="material-symbols-outlined text-xl">folder_open</span>
         My Documents
