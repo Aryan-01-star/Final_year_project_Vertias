@@ -103,6 +103,28 @@
                                     class="w-full bg-slate-custom-50 border-slate-custom-200 rounded-2xl py-3.5 px-4 text-slate-custom-900 focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-custom-400"
                                     placeholder="e.g. 5" type="number" min="0" max="50" />
                             </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold uppercase tracking-widest text-slate-custom-400">Home Ownership</label>
+                                <select id="home_ownership" required
+                                    class="w-full bg-slate-custom-50 border-slate-custom-200 rounded-2xl py-3.5 px-4 text-slate-custom-900 focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                                    <option value="RENT">Rent</option>
+                                    <option value="MORTGAGE">Mortgage</option>
+                                    <option value="OWN">Own</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold uppercase tracking-widest text-slate-custom-400">Loan Intent</label>
+                                <select id="loan_intent" required
+                                    class="w-full bg-slate-custom-50 border-slate-custom-200 rounded-2xl py-3.5 px-4 text-slate-custom-900 focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                                    <option value="PERSONAL">Personal</option>
+                                    <option value="EDUCATION">Education</option>
+                                    <option value="MEDICAL">Medical</option>
+                                    <option value="VENTURE">Venture</option>
+                                    <option value="HOMEIMPROVEMENT">Home Improvement</option>
+                                    <option value="DEBTCONSOLIDATION">Debt Consolidation</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="space-y-2">
                             <label class="text-xs font-bold uppercase tracking-widest text-slate-custom-400">Duration
@@ -257,7 +279,9 @@
                 loan_amount: sanitize(document.getElementById('loan_amount').value),
                 duration: document.getElementById('duration').value,
                 age: document.getElementById('age').value,
-                emp_length: document.getElementById('emp_length').value
+                emp_length: document.getElementById('emp_length').value,
+                home_ownership: document.getElementById('home_ownership').value,
+                loan_intent: document.getElementById('loan_intent').value
             };
 
             try {

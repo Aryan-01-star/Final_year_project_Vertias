@@ -99,17 +99,17 @@
                                 <circle class="stroke-slate-100 dark:stroke-slate-800" cx="18" cy="18" fill="none"
                                     r="16" stroke-width="3.5"></circle>
                                 <circle class="stroke-primary" cx="18" cy="18" fill="none" r="16"
-                                    stroke-dasharray="68.5, 100" stroke-linecap="round" stroke-width="3.5"></circle>
+                                    stroke-dasharray="{{ metrics.approval_rate }}, 100" stroke-linecap="round" stroke-width="3.5"></circle>
                             </svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center"><span
-                                    class="text-4xl font-bold font-display" style="">68%</span><span
+                                    class="text-4xl font-bold font-display" style="">{{ "%.0f"|format(metrics.approval_rate) }}%</span><span
                                     class="text-[10px] font-bold text-slate-custom-400 uppercase"
                                     style="">Approval</span></div>
                         </div>
                         <div class="flex-1 space-y-6">
                             <div>
                                 <h4 class="text-2xl font-bold font-display mb-1" style="">Approval Distribution</h4>
-                                <p class="text-sm text-slate-custom-500" style="">Portfolio performance over ₹45.2 Cr
+                                <p class="text-sm text-slate-custom-500" style="">Portfolio performance over ₹{{ "{:,.1f}".format(metrics.total_volume/10000000) }} Cr
                                 </p>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
@@ -117,13 +117,13 @@
                                     class="p-4 rounded-3xl bg-slate-custom-50 dark:bg-slate-custom-800/50 border border-slate-custom-100">
                                     <p class="text-[10px] font-bold text-slate-custom-400 uppercase mb-1" style="">
                                         Approved</p>
-                                    <p class="text-xl font-bold" style="">₹32.4 Cr</p>
+                                    <p class="text-xl font-bold" style="">₹{{ "{:,.1f}".format(metrics.status_volume.get('Approved', 0)/10000000) }} Cr</p>
                                 </div>
                                 <div
                                     class="p-4 rounded-3xl bg-slate-custom-50 dark:bg-slate-custom-800/50 border border-slate-custom-100">
                                     <p class="text-[10px] font-bold text-slate-custom-400 uppercase mb-1" style="">
                                         Rejected</p>
-                                    <p class="text-xl font-bold" style="">₹12.8 Cr</p>
+                                    <p class="text-xl font-bold" style="">₹{{ "{:,.1f}".format(metrics.status_volume.get('Rejected', 0)/10000000) }} Cr</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 text-sm text-emerald-600 font-bold"><span

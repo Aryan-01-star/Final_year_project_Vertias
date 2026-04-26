@@ -1,0 +1,280 @@
+{% extends "client_base.html" %}
+
+{% set active_client_nav = "underwriting" %}
+
+{% block title %}AI Underwriting - Veritas{% endblock %}
+
+{% block header_title %}Loan Underwriting Simulator{% endblock %}
+
+{% block head %}
+  <style>
+    .terminal-glow { box-shadow: 0 0 20px rgba(25, 85, 230, 0.15); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex flex-col lg:flex-row gap-8 animate-fade-in">
+        <!-- Left Panel: Input Form -->
+        <section class="lg:w-1/2 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-custom-200 dark:border-slate-custom-800 p-8 lg:p-10 shadow-sm">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold tracking-tight text-slate-custom-900 dark:text-white mb-2 font-display">Check Your Eligibility</h2>
+                <p class="text-slate-400 text-sm">Input your financial details to see how our AI Risk Engine evaluates your loan application in real-time.</p>
+            </div>
+            
+            <form id="risk-form" class="space-y-6">
+                <!-- Basic Info -->
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Application Name</label>
+                    <input id="customer_name" required
+                        class="w-full bg-slate-custom-50 dark:bg-slate-custom-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 px-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-custom-400"
+                        placeholder="e.g. Personal Loan - April" type="text" value="Personal Loan - {{ session.get('username', 'User') }}" />
+                </div>
+
+                <!-- Numeric Inputs Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Annual Income (₹)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₹</span>
+                            <input id="income" required
+                                class="w-full bg-slate-custom-50 dark:bg-slate-custom-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 pl-10 pr-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-custom-400"
+                                placeholder="e.g. 12,00,000" type="text" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Current Monthly Debt (₹)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₹</span>
+                            <input id="debt" required
+                                class="w-full bg-slate-custom-50 dark:bg-slate-custom-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 pl-10 pr-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-custom-400"
+                                placeholder="e.g. 25,000" type="text" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Estimated Credit Score</label>
+                        <input id="credit_score" required
+                            class="w-full bg-slate-custom-50 dark:bg-slate-custom-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 px-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-custom-400"
+                            placeholder="300 - 900" type="number" min="300" max="900" value="750" />
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Requested Amount (₹)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₹</span>
+                            <input id="loan_amount" required
+                                class="w-full bg-slate-custom-50 dark:bg-slate-custom-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 pl-10 pr-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-custom-400"
+                                placeholder="e.g. 5,00,000" type="text" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Age</label>
+                        <input id="age" required
+                            class="w-full bg-slate-custom-50 dark:bg-slate-custom-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 px-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-custom-400"
+                            placeholder="e.g. 28" type="number" min="18" max="100" value="30" />
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Employment (Years)</label>
+                        <input id="emp_length" required
+                            class="w-full bg-slate-custom-50 dark:bg-slate-custom-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 px-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-custom-400"
+                            placeholder="e.g. 5" type="number" min="0" max="50" value="3" />
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Home Ownership</label>
+                        <select id="home_ownership" required
+                            class="w-full bg-slate-custom-50 dark:bg-slate-custom-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 px-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                            <option value="RENT">Rent</option>
+                            <option value="MORTGAGE">Mortgage</option>
+                            <option value="OWN">Own</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Loan Intent</label>
+                        <select id="loan_intent" required
+                            class="w-full bg-slate-custom-50 dark:bg-slate-800 border-slate-custom-200 dark:border-slate-custom-700 rounded-2xl py-3.5 px-4 text-slate-custom-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                            <option value="PERSONAL">Personal</option>
+                            <option value="EDUCATION">Education</option>
+                            <option value="MEDICAL">Medical</option>
+                            <option value="VENTURE">Venture</option>
+                            <option value="HOMEIMPROVEMENT">Home Improvement</option>
+                            <option value="DEBTCONSOLIDATION">Debt Consolidation</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-custom-400">Loan Tenure: <span id="duration_val" class="text-primary">24 Months</span></label>
+                    <input id="duration"
+                        class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary"
+                        max="120" min="6" step="6" type="range" value="24"
+                        oninput="document.getElementById('duration_val').innerText = this.value + ' Months'" />
+                    <div class="flex justify-between text-[10px] text-slate-400 font-mono font-bold">
+                        <span>6M</span>
+                        <span>120M</span>
+                    </div>
+                </div>
+
+                <button
+                    class="w-full bg-primary hover:scale-[1.02] active:scale-[0.98] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/25"
+                    type="submit">
+                    <span class="material-symbols-outlined">analytics</span>
+                    Run AI Risk Analysis
+                </button>
+            </form>
+        </section>
+
+        <!-- Right Panel: Results Area -->
+        <section class="lg:w-1/2 flex flex-col gap-6">
+            <div id="results-placeholder" class="flex-1 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-custom-200 dark:border-slate-custom-800 p-10 flex flex-col items-center justify-center text-center">
+                <div class="size-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+                    <span class="material-symbols-outlined text-4xl text-slate-300">psychology</span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2 font-display">Ready for Analysis</h3>
+                <p class="text-slate-500 text-sm max-w-xs">Fill out your financial profile and run the engine to see your real-time risk assessment.</p>
+            </div>
+
+            <div id="results-loading" class="hidden flex-1 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-custom-200 dark:border-slate-custom-800 p-10 flex flex-col items-center justify-center text-center">
+                <div class="relative size-24 mb-6">
+                    <div class="absolute inset-0 border-4 border-primary/10 rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-3xl text-primary">data_thresholding</span>
+                    </div>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2 font-display">Analyzing Data...</h3>
+                <p class="text-slate-500 text-sm animate-pulse">Running ensemble ML models (XGBoost, CatBoost)...</p>
+            </div>
+
+            <div id="results-content" class="hidden space-y-6">
+                <!-- Score Display -->
+                <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-custom-200 dark:border-slate-custom-800 p-8 flex flex-col items-center text-center shadow-sm">
+                    <div class="relative mb-6">
+                        <svg class="size-48 -rotate-90" viewBox="0 0 100 100">
+                            <circle class="text-slate-100 dark:text-slate-800 stroke-current" cx="50" cy="50" fill="transparent" r="45" stroke-width="6"></circle>
+                            <circle id="score-circle" class="text-primary stroke-current" cx="50" cy="50" fill="transparent" r="45" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span id="quant-score" class="text-5xl font-black font-display text-slate-900 dark:text-white">---</span>
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Veritas Score</span>
+                        </div>
+                    </div>
+                    <div id="risk-label" class="px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.2em] mb-2">
+                        Checking...
+                    </div>
+                    <p id="system-recommendation" class="text-xs text-slate-500 max-w-xs mt-2"></p>
+                </div>
+
+                <!-- Insights List -->
+                <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-custom-200 dark:border-slate-custom-800 p-8 shadow-sm">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">insights</span>
+                        Model Insights
+                    </h4>
+                    <div id="risk-insights" class="space-y-4">
+                        <!-- Insights injected here -->
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button onclick="window.location.href='/client_dashboard'" class="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                    <span class="material-symbols-outlined text-sm">assignment_turned_in</span>
+                    Apply with these details
+                </button>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const RISK_STYLES = {
+        emerald: { bg: "bg-emerald-500/10", text: "text-emerald-500", border: "border-emerald-500/20" },
+        green: { bg: "bg-emerald-500/10", text: "text-emerald-500", border: "border-emerald-500/20" },
+        amber: { bg: "bg-amber-500/10", text: "text-amber-500", border: "border-amber-500/20" },
+        red: { bg: "bg-red-500/10", text: "text-red-500", border: "border-red-500/20" },
+    };
+
+    document.getElementById('risk-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // UI States
+        document.getElementById('results-placeholder').classList.add('hidden');
+        document.getElementById('results-content').classList.add('hidden');
+        document.getElementById('results-loading').classList.remove('hidden');
+
+        const sanitize = (val) => val.replace(/[^0-9.-]+/g, "");
+
+        const payload = {
+            customer_name: document.getElementById('customer_name').value,
+            income: sanitize(document.getElementById('income').value),
+            debt: sanitize(document.getElementById('debt').value),
+            credit_score: document.getElementById('credit_score').value,
+            loan_amount: sanitize(document.getElementById('loan_amount').value),
+            duration: document.getElementById('duration').value,
+            age: document.getElementById('age').value,
+            emp_length: document.getElementById('emp_length').value,
+            home_ownership: document.getElementById('home_ownership').value,
+            loan_intent: document.getElementById('loan_intent').value
+        };
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                alert('Analysis Error: ' + data.error);
+                return;
+            }
+
+            // Update UI
+            document.getElementById('quant-score').innerText = data.score;
+            
+            const style = RISK_STYLES[data.color] || RISK_STYLES.amber;
+            const label = document.getElementById('risk-label');
+            label.innerText = data.risk_label;
+            label.className = `px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.2em] mb-2 ${style.bg} ${style.text} border ${style.border}`;
+
+            document.getElementById('system-recommendation').innerText = data.recommendation;
+
+            // Score Circle Animation
+            const circle = document.getElementById('score-circle');
+            const circumference = 283;
+            const offset = circumference - (data.score / 1000) * circumference;
+            circle.style.strokeDashoffset = offset;
+            circle.className = `${style.text} stroke-current transition-all duration-1000 ease-out`;
+
+            // Insights
+            const insightsContainer = document.getElementById('risk-insights');
+            insightsContainer.innerHTML = '';
+            data.insights.forEach((insight, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-start gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 animate-fade-in';
+                div.style.animationDelay = `${idx * 0.1}s`;
+                div.innerHTML = `
+                    <span class="material-symbols-outlined text-sm ${style.text}">verified</span>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 font-medium">${insight.text}</p>
+                `;
+                insightsContainer.appendChild(div);
+            });
+
+            // Show results
+            document.getElementById('results-loading').classList.add('hidden');
+            document.getElementById('results-content').classList.remove('hidden');
+
+        } catch (err) {
+            console.error(err);
+            alert('Failed to connect to the Veritas AI engine.');
+            document.getElementById('results-loading').classList.add('hidden');
+            document.getElementById('results-placeholder').classList.remove('hidden');
+        }
+    });
+</script>
+{% endblock %}

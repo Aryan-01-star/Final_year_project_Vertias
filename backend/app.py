@@ -111,6 +111,19 @@ ENCODER_PATH = os.path.join(BASE_DIR, 'encoders.joblib')
 FEATURES_PATH = os.path.join(BASE_DIR, 'features.joblib')
 
 model = None
+encoders = {}
+feature_names = []
+
+if os.path.exists(MODEL_PATH):
+    try:
+        model = joblib.load(MODEL_PATH)
+        encoders = joblib.load(ENCODER_PATH)
+        feature_names = joblib.load(FEATURES_PATH)
+        print(f"ML Prediction Engine: Loaded model with {len(feature_names)} features.")
+    except Exception as e:
+        print(f"Error loading ML models: {e}")
+else:
+    print("Warning: ML model files not found. Falling back to dummy logic.")
 
 # Initialize Iris Verifier
 print("Initializing Iris Recognition Engine...")
@@ -191,6 +204,11 @@ def client_documents():
 @onboarding_enforcer
 def client_iris():
     return render_template('client_iris.html')
+
+@app.route('/client_underwriting')
+@client_required
+def client_underwriting():
+    return render_template('client_underwriting.html')
 
 @app.route('/client_review')
 @onboarding_enforcer
@@ -347,22 +365,32 @@ def predict():
         age = int(data.get('age', 30))
         emp_length = float(data.get('emp_length', 5.0))
         customer_name = data.get('customer_name', 'Guest User')
+        
+        home_ownership = data.get('home_ownership', 'RENT')
+        loan_intent = data.get('loan_intent', 'PERSONAL')
 
         if model:
             grade = score_to_grade(credit_score)
             
+            # Map grade to a realistic interest rate
+            # (In reality, higher risk grades get much higher rates)
+            grade_int_rates = {
+                'A': 7.5, 'B': 10.5, 'C': 13.5, 'D': 16.5, 'E': 19.5, 'F': 22.5
+            }
+            int_rate = grade_int_rates.get(grade, 15.0)
+
             # Feature engineering
             features = {
                 'person_age': age,
                 'person_income': income,
-                'person_home_ownership': 'RENT', # Default
+                'person_home_ownership': home_ownership,
                 'person_emp_length': emp_length,
-                'loan_intent': 'PERSONAL', # Default
+                'loan_intent': loan_intent,
                 'loan_grade': grade,
                 'loan_amnt': loan_amnt,
-                'loan_int_rate': 11.0, # Default
+                'loan_int_rate': int_rate,
                 'loan_percent_income': loan_amnt / income if income > 0 else 0,
-                'cb_person_default_on_file': 'N', # Default
+                'cb_person_default_on_file': 'N', 
                 'cb_person_cred_hist_length': int(duration/12)
             }
             
@@ -370,31 +398,44 @@ def predict():
             input_df = pd.DataFrame([features])
             for col, le in encoders.items():
                 if col in input_df.columns:
-                    # Handle unseen labels by mapping to first class if necessary
                     try:
                         input_df[col] = le.transform(input_df[col])
                     except:
                         input_df[col] = 0
 
-            # Reorder columns to match feature_names
             input_df = input_df[feature_names]
             
             # Prediction
             prediction_prob = model.predict_proba(input_df)[0]
-            # Prob of default is second element (1)
-            default_prob = prediction_prob[1]
+            default_prob = float(prediction_prob[1])
             
-            # Convert default probability to a score 0-1000 (higher is better)
+            # Convert default probability to a Veritas Score (0-1000)
+            # We use a non-linear mapping to spread out the low-risk area
+            # Score = 1000 * (1 - default_prob)^1.5 (as an example)
             score = int((1 - default_prob) * 1000)
+            
+            # Penalize score based on Total DTI (including existing debt)
+            # This makes the score more "accurate" for users with heavy debt
+            total_monthly_commitment = (loan_amnt / duration) + (debt / 12)
+            monthly_income = income / 12
+            dti_ratio = total_monthly_commitment / monthly_income if monthly_income > 0 else 1
+            
+            if dti_ratio > 0.5: # If more than 50% of income goes to debt
+                score = int(score * 0.85) # 15% penalty
+            elif dti_ratio > 0.35:
+                score = int(score * 0.95) # 5% penalty
+            
+            score = max(0, min(1000, score))
+            
         else:
-            # Fallback dummy logic
             score = 750
             default_prob = 0.1
+            int_rate = 11.0
 
-        # Determine label and color
-        if score > 800:
+        # Determine label and color with more realistic thresholds
+        if score > 900:
             label, color = "Minimal Risk", "emerald"
-        elif score > 700:
+        elif score > 750:
             label, color = "Low Risk", "green"
         elif score > 500:
             label, color = "Medium Risk", "amber"
@@ -410,7 +451,15 @@ def predict():
             'loan_amount': loan_amnt,
             'duration': duration,
             'risk_score': score,
-            'risk_label': label
+            'risk_label': label,
+            'status': 'Approved' if score > 750 else ('Rejected' if score < 400 else 'Under Review'),
+            'priority': 'Normal' if score > 600 else 'High',
+            'age': age,
+            'emp_length': emp_length,
+            'home_ownership': home_ownership,
+            'loan_intent': loan_intent,
+            'loan_grade': score_to_grade(credit_score),
+            'int_rate': int_rate
         })
 
         return jsonify({
@@ -418,10 +467,11 @@ def predict():
             'risk_label': label,
             'color': color,
             'application_id': app_id,
-            'recommendation': "Automatic approval recommended" if score > 700 else "Requires manual review",
+            'recommendation': "Automatic approval recommended" if score > 750 else ("Rejected: High Risk" if score < 400 else "Requires manual review"),
             'insights': [
-                {'text': f'Monthly Income Coverage: {round(income/(loan_amnt/duration if duration > 0 else 1), 2)}x'},
-                {'text': f'Derived Credit Grade: {score_to_grade(credit_score)}'},
+                {'text': f'Monthly Income Coverage: {round(income/(loan_amnt/duration if duration > 0 else 1), 1)}x'},
+                {'text': f'Assigned Interest Rate: {int_rate}%'},
+                {'text': f'Total Debt-to-Income: {round(dti_ratio*100, 1)}%'},
                 {'text': f'Exposure Level: {round((loan_amnt/income)*100, 1)}% of annual income'}
             ]
         })

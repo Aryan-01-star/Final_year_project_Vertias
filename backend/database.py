@@ -15,7 +15,7 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Create applications table
+    # Create applications table with expanded features
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS applications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,9 +30,46 @@ def init_db():
         risk_label TEXT,
         status TEXT,
         priority TEXT,
+        age INTEGER,
+        emp_length REAL,
+        home_ownership TEXT,
+        loan_intent TEXT,
+        loan_grade TEXT,
+        int_rate REAL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
+    
+    # Simple migration: check if 'age' exists, if not, recreate or alter
+    try:
+        cursor.execute("SELECT age FROM applications LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating applications table...")
+        cursor.execute("DROP TABLE IF EXISTS applications")
+        # Re-run create
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS applications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            application_id TEXT UNIQUE,
+            customer_name TEXT,
+            income REAL,
+            debt REAL,
+            credit_score INTEGER,
+            loan_amount REAL,
+            duration INTEGER,
+            risk_score REAL,
+            risk_label TEXT,
+            status TEXT,
+            priority TEXT,
+            age INTEGER,
+            emp_length REAL,
+            home_ownership TEXT,
+            loan_intent TEXT,
+            loan_grade TEXT,
+            int_rate REAL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        ''')
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS client_applications (
@@ -65,14 +102,14 @@ def init_db():
     if cursor.fetchone()[0] == 0:
         print("Seeding database with sample applications...")
         samples = [
-            ('VNB-90488', 'Rajesh Kumar', 1200000, 450000, 785, 850000, 36, 785, 'Low Risk', 'Under Review', 'High'),
-            ('VNB-90512', 'Ananya Sharma', 1500000, 200000, 812, 1500000, 48, 812, 'Minimal Risk', 'Pending', 'Normal'),
-            ('VNB-90399', 'Vikram Singh', 600000, 550000, 645, 420000, 24, 645, 'High Risk', 'Escalated', 'Critical'),
-            ('VNB-90555', 'Priya Verma', 850000, 100000, 790, 150000, 12, 790, 'Low Risk', 'Pending', 'Normal')
+            ('VNB-90488', 'Rajesh Kumar', 1200000, 450000, 785, 850000, 36, 785, 'Low Risk', 'Under Review', 'High', 34, 12.0, 'MORTGAGE', 'PERSONAL', 'A', 11.5),
+            ('VNB-90512', 'Ananya Sharma', 1500000, 200000, 812, 1500000, 48, 812, 'Minimal Risk', 'Approved', 'Normal', 29, 8.0, 'RENT', 'EDUCATION', 'A', 10.2),
+            ('VNB-90399', 'Vikram Singh', 600000, 550000, 645, 420000, 24, 645, 'High Risk', 'Rejected', 'Critical', 45, 1.5, 'RENT', 'MEDICAL', 'D', 14.8),
+            ('VNB-90555', 'Priya Verma', 850000, 100000, 790, 150000, 12, 790, 'Low Risk', 'Approved', 'Normal', 24, 4.0, 'RENT', 'PERSONAL', 'B', 11.0)
         ]
         cursor.executemany('''
-        INSERT INTO applications (application_id, customer_name, income, debt, credit_score, loan_amount, duration, risk_score, risk_label, status, priority)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO applications (application_id, customer_name, income, debt, credit_score, loan_amount, duration, risk_score, risk_label, status, priority, age, emp_length, home_ownership, loan_intent, loan_grade, int_rate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', samples)
     
     conn.commit()
@@ -86,8 +123,8 @@ def save_application(data):
     app_id = f"VNB-{os.urandom(2).hex().upper()}"
     
     cursor.execute('''
-    INSERT INTO applications (application_id, customer_name, income, debt, credit_score, loan_amount, duration, risk_score, risk_label, status, priority)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO applications (application_id, customer_name, income, debt, credit_score, loan_amount, duration, risk_score, risk_label, status, priority, age, emp_length, home_ownership, loan_intent, loan_grade, int_rate)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         app_id,
         data.get('customer_name', 'Guest User'),
@@ -98,8 +135,14 @@ def save_application(data):
         data.get('duration'),
         data.get('risk_score'),
         data.get('risk_label'),
-        'Pending',
-        'Normal'
+        data.get('status', 'Pending'),
+        data.get('priority', 'Normal'),
+        data.get('age'),
+        data.get('emp_length'),
+        data.get('home_ownership', 'RENT'),
+        data.get('loan_intent', 'PERSONAL'),
+        data.get('loan_grade', 'B'),
+        data.get('int_rate', 11.0)
     ))
     
     conn.commit()
@@ -125,8 +168,24 @@ def get_analytics():
     cursor.execute('SELECT SUM(loan_amount) FROM applications')
     total_volume = cursor.fetchone()[0] or 0
     
-    cursor.execute('SELECT COUNT(*) FROM applications WHERE status = "Under Review"')
+    cursor.execute('SELECT COUNT(*) FROM applications WHERE status IN ("Under Review", "Pending")')
     pending = cursor.fetchone()[0]
+    
+    # 1. Risk Label Distribution
+    cursor.execute('SELECT risk_label, COUNT(*) FROM applications GROUP BY risk_label')
+    risk_dist = {row[0]: row[1] for row in cursor.fetchall()}
+    
+    # 2. Status Volume Distribution
+    cursor.execute('SELECT status, SUM(loan_amount) FROM applications GROUP BY status')
+    status_volume = {row[0]: row[1] for row in cursor.fetchall()}
+    
+    # 3. Monthly Trend (last 6 months)
+    cursor.execute("SELECT strftime('%m', created_at) as month, SUM(loan_amount) FROM applications GROUP BY month ORDER BY month DESC LIMIT 6")
+    monthly_trend = {row[0]: row[1] for row in cursor.fetchall()}
+    
+    # 4. Grade Distribution
+    cursor.execute('SELECT loan_grade, COUNT(*) FROM applications GROUP BY loan_grade')
+    grade_dist = {row[0]: row[1] for row in cursor.fetchall()}
     
     conn.close()
     
@@ -134,7 +193,11 @@ def get_analytics():
         'total_applications': total,
         'approval_rate': (approved / total * 100) if total > 0 else 0,
         'total_volume': total_volume,
-        'pending_count': pending
+        'pending_count': pending,
+        'risk_distribution': risk_dist,
+        'status_volume': status_volume,
+        'monthly_trend': monthly_trend,
+        'grade_distribution': grade_dist
     }
 
 def _default_documents():

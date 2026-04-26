@@ -42,11 +42,14 @@
                 <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] border border-slate-custom-200 dark:border-slate-custom-800">
                     <h3 class="text-xl font-bold mb-6">Volume Growth Trend</h3>
                     <div class="h-80 w-full flex items-end gap-2 px-4">
+                        {% set months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] %}
                         {% for i in range(12) %}
-                        {% set h = [40, 55, 45, 70, 65, 85, 80, 95, 90, 100, 110, 120][i] %}
+                        {% set m_key = "{:02d}".format(i+1) %}
+                        {% set vol = metrics.monthly_trend.get(m_key, 0) / 10000000 %}
+                        {% set h = (vol * 10) if vol > 0 else 5 %}
                         <div class="flex-1 group relative">
-                            <div class="bg-primary/20 group-hover:bg-primary/40 transition-colors w-full rounded-t-xl" style="height: {{ h * 2 }}px;"></div>
-                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">₹{{ h }}M</div>
+                            <div class="bg-primary/20 group-hover:bg-primary/40 transition-colors w-full rounded-t-xl" style="height: {{ h }}px;"></div>
+                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">₹{{ "%.1f"|format(vol) }} Cr</div>
                         </div>
                         {% endfor %}
                     </div>
@@ -72,14 +75,17 @@
                 <div class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] border border-slate-custom-200 dark:border-slate-custom-800">
                     <h3 class="text-xl font-bold mb-8">Risk Grade Distribution</h3>
                     <div class="space-y-6">
-                        {% for grade, count, color in [('Grade A', 42, 'emerald'), ('Grade B', 35, 'blue'), ('Grade C', 15, 'amber'), ('Grade D', 8, 'red')] %}
+                        {% set total = metrics.total_applications %}
+                        {% for grade, color in [('A', 'emerald'), ('B', 'blue'), ('C', 'amber'), ('D', 'red')] %}
+                        {% set count = metrics.grade_distribution.get(grade, 0) %}
+                        {% set perc = (count / total * 100) if total > 0 else 0 %}
                         <div class="space-y-2">
                             <div class="flex justify-between text-xs font-bold">
-                                <span class="text-slate-custom-400">{{ grade }}</span>
-                                <span>{{ count }}%</span>
+                                <span class="text-slate-custom-400">Grade {{ grade }}</span>
+                                <span>{{ "%.1f"|format(perc) }}%</span>
                             </div>
                             <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-{{ color }}-500" style="width: {{ count }}%;"></div>
+                                <div class="h-full bg-{{ color }}-500" style="width: {{ perc }}%;"></div>
                             </div>
                         </div>
                         {% endfor %}

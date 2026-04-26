@@ -5,7 +5,7 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>{% block title %}Veritas Client Portal{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Domine:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <script id="tailwind-config">
     tailwind.config = {
@@ -13,39 +13,104 @@
       theme: {
         extend: {
           colors: {
-            primary: "#1955e6",
-            "background-light": "#f6f6f8",
-            "background-dark": "#111621"
+            "primary": "#1955e6",
+            "background-light": "#f8fafc",
+            "background-dark": "#0f172a",
+            "slate-custom": {
+              50: "#f8fafc", 100: "#f1f5f9", 200: "#e2e8f0", 300: "#cbd5e1", 400: "#94a3b8", 500: "#64748b", 600: "#475569", 700: "#334155", 800: "#1e293b", 900: "#0f172a"
+            }
           },
           fontFamily: {
-            sans: ["Be Vietnam Pro", "sans-serif"],
-            display: ["Domine", "serif"]
-          }
-        }
-      }
+            "display": ["Be Vietnam Pro", "sans-serif"],
+            "sans": ["Be Vietnam Pro", "sans-serif"]
+          },
+          borderRadius: { "DEFAULT": "1rem", "lg": "2.25rem", "xl": "3rem", "full": "9999px" },
+        },
+      },
     }
   </script>
+  <style>
+    body { font-family: 'Be Vietnam Pro', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+  </style>
+  {% block head %}{% endblock %}
 </head>
-<body class="bg-background-light dark:bg-background-dark font-sans text-slate-900 dark:text-slate-100">
-  <header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-4 lg:px-10 sticky top-0 z-50">
-    <div class="flex items-center gap-3 text-primary">
-      <span class="material-symbols-outlined">shield_with_heart</span>
-      <h2 class="text-slate-900 dark:text-white text-xl font-extrabold tracking-tight font-display">Veritas Client Portal</h2>
+<body class="bg-background-light dark:bg-background-dark text-slate-custom-900 dark:text-slate-custom-100 min-h-screen flex">
+  
+  <!-- Client Sidebar -->
+  <aside class="w-72 bg-white dark:bg-slate-900 border-r border-slate-custom-200 dark:border-slate-custom-800 flex flex-col h-screen sticky top-0 font-display z-50">
+    <div onclick="window.location.href='/client_dashboard'" class="cursor-pointer p-8 flex items-center gap-3">
+      <div class="bg-primary size-10 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+        <span class="material-symbols-outlined">shield_with_heart</span>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold font-display tracking-tight text-primary">Veritas</h1>
+        <p class="text-[10px] uppercase tracking-widest text-slate-custom-400 font-bold">Client Portal</p>
+      </div>
     </div>
-    <div class="flex items-center gap-4">
-      <p class="text-sm text-slate-500 hidden sm:block">Welcome, {{ session.get('username', 'client') }}</p>
-      <a href="/logout" class="px-4 py-2 rounded-full text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">Sign Out</a>
+
+    <nav class="flex-1 px-6 py-4 space-y-2 overflow-y-auto custom-scrollbar">
+      <a class="flex items-center gap-3 px-4 py-3 rounded-2xl {% if active_client_nav=='dashboard' %}bg-primary/5 text-primary font-bold{% else %}text-slate-custom-500 dark:text-slate-custom-400 hover:bg-slate-custom-50 dark:hover:bg-slate-custom-800 transition-colors{% endif %}" href="/client_dashboard">
+        <span class="material-symbols-outlined text-xl">dashboard</span>
+        Dashboard
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 rounded-2xl {% if active_client_nav=='underwriting' %}bg-primary/5 text-primary font-bold{% else %}text-slate-custom-500 dark:text-slate-custom-400 hover:bg-slate-custom-50 dark:hover:bg-slate-custom-800 transition-colors{% endif %}" href="/client_underwriting">
+        <span class="material-symbols-outlined text-xl">rocket_launch</span>
+        AI Underwriting
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 rounded-2xl {% if active_client_nav=='documents' %}bg-primary/5 text-primary font-bold{% else %}text-slate-custom-500 dark:text-slate-custom-400 hover:bg-slate-custom-50 dark:hover:bg-slate-custom-800 transition-colors{% endif %}" href="/client_documents">
+        <span class="material-symbols-outlined text-xl">folder_open</span>
+        My Documents
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 rounded-2xl {% if active_client_nav=='support' %}bg-primary/5 text-primary font-bold{% else %}text-slate-custom-500 dark:text-slate-custom-400 hover:bg-slate-custom-50 dark:hover:bg-slate-custom-800 transition-colors{% endif %}" href="/client_support">
+        <span class="material-symbols-outlined text-xl">support_agent</span>
+        Support Center
+      </a>
+    </nav>
+
+    <div class="p-6 border-t border-slate-custom-100 dark:border-slate-custom-800">
+      <div class="bg-slate-custom-50 dark:bg-slate-custom-800/50 rounded-2xl p-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+            {{ session.get('username', 'C')[0] | upper }}
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-bold truncate">{{ session.get('username', 'Client') }}</p>
+            <p class="text-[10px] text-slate-custom-400 font-medium uppercase tracking-wider">Premium User</p>
+          </div>
+        </div>
+        <a href="/logout" class="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors">
+          <span class="material-symbols-outlined text-sm">logout</span> Sign Out
+        </a>
+      </div>
     </div>
-  </header>
+  </aside>
 
-  <div class="max-w-6xl mx-auto px-6 lg:px-10 pt-4">
-    <!-- Breadcrumb or Phase Indicator can go here -->
-  </div>
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <header class="h-24 px-12 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-slate-custom-200 dark:border-slate-custom-800 sticky top-0 z-10 font-display">
+      <div class="flex items-center gap-3">
+        <h2 class="text-xl font-bold font-display text-slate-custom-900 dark:text-slate-custom-50">
+          {% block header_title %}Veritas Portal{% endblock %}
+        </h2>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:flex bg-slate-custom-50 dark:bg-slate-custom-800 px-4 py-2 rounded-2xl border border-slate-custom-200 dark:border-slate-custom-700 items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-custom-500">
+          <span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Secure Session
+        </div>
+      </div>
+    </header>
 
-  <main class="max-w-6xl mx-auto p-6 lg:p-10 space-y-8">
-    {% block content %}{% endblock %}
+    <div class="flex-1 overflow-y-auto p-12 custom-scrollbar">
+      {% block content %}{% endblock %}
+    </div>
   </main>
 
   {% block scripts %}{% endblock %}
 </body>
 </html>
+
