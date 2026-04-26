@@ -349,6 +349,9 @@
                 <button data-action="approve" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">Auto Approve</button>
                 <button data-action="review" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-primary text-white rounded-lg hover:opacity-90 transition-all">Manual Review</button>
                 <button data-action="reject" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Reject</button>
+                <button data-action="delete" class="p-1.5 text-slate-400 hover:text-red-500 transition-all" title="Delete Application">
+                  <span class="material-symbols-outlined text-sm">delete</span>
+                </button>
               </div>
             </td>
           `;
@@ -358,6 +361,9 @@
           
           const rejectBtn = tr.querySelector('[data-action="reject"]');
           if (rejectBtn) rejectBtn.onclick = () => updateStatus(app.application_id, 'Rejected');
+          
+          const deleteBtn = tr.querySelector('[data-action="delete"]');
+          if (deleteBtn) deleteBtn.onclick = () => deleteApplication(app.application_id);
           
           const reviewBtn = tr.querySelector('[data-action="review"]');
           if (reviewBtn) {
@@ -415,6 +421,23 @@
     } catch (err) {
       console.error(err);
       alert("Error updating status.");
+    }
+  }
+
+  async function deleteApplication(appId) {
+    if (!confirm("Are you sure you want to delete this application? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/applications/${appId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchApplications();
+      } else {
+        alert("Failed to delete application.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting application.");
     }
   }
 

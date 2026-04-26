@@ -315,6 +315,13 @@ def api_update_application_status(app_id):
     update_application_status(app_id, status)
     return jsonify({'ok': True})
 
+@app.route('/api/applications/<app_id>', methods=['DELETE'])
+@login_required
+def api_delete_application(app_id):
+    from database import delete_application
+    delete_application(app_id)
+    return jsonify({'ok': True})
+
 @app.route('/api/applications')
 @login_required
 def api_applications():

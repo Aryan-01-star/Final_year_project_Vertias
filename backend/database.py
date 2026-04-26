@@ -166,6 +166,14 @@ def update_application_status(app_id, status):
     conn.close()
     return True
 
+def delete_application(app_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM applications WHERE application_id = ?', (app_id,))
+    conn.commit()
+    conn.close()
+    return True
+
 def get_all_applications():
     conn = get_db_connection()
     apps = conn.execute('SELECT * FROM applications ORDER BY created_at DESC').fetchall()
